@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#05070d" />
+<title>SCALP — 60-Second Trading Floor</title>
+<meta name="description" content="Read the tape. Long, short, slam-close. Survive 60 seconds on the trading floor without getting liquidated." />
+<style>
+  :root{
+    --bg:#05070d; --panel:#0a0f1c; --grid:#10182b;
+    --green:#21e88a; --green-dim:#0f7a4a;
+    --red:#ff3b5c; --red-dim:#8a1f33;
+    --amber:#ffd54a; --cyan:#46e8ff; --ink:#cdd9ff; --muted:#5d6b91;
+    --font:'Courier New',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden;overscroll-behavior:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  /* CRT vignette + scanlines overlay */
+  #scan{position:fixed;inset:0;pointer-events:none;z-index:5;
+    background:
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0px, rgba(0,0,0,.16) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode:multiply;opacity:.7}
+  .overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;gap:16px;background:radial-gradient(ellipse at center,rgba(5,7,13,.86),rgba(5,7,13,.97))}
+  .hidden{display:none!important}
+  h1{font-size:clamp(40px,11vw,96px);margin:0;letter-spacing:.12em;font-weight:900;
+    color:#fff;text-shadow:0 0 18px var(--cyan),0 0 4px var(--cyan);line-height:.95}
+  h1 .b{color:var(--amber);text-shadow:0 0 18px var(--amber),0 0 4px var(--amber)}
+  h1 .cur{color:var(--amber);text-shadow:0 0 18px var(--amber),0 0 4px var(--amber);animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .tag{color:var(--muted);letter-spacing:.34em;font-size:clamp(10px,2.6vw,14px);text-transform:uppercase}
+  .how{max-width:520px;color:var(--ink);font-size:clamp(12px,3.2vw,15px);line-height:1.7;opacity:.92}
+  .how b.g{color:var(--green)} .how b.r{color:var(--red)} .how b.a{color:var(--amber)}
+  .keys{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+  .kbd{border:1px solid var(--grid);background:var(--panel);padding:7px 12px;border-radius:7px;font-size:13px;color:var(--ink)}
+  .kbd small{color:var(--muted)}
+  button.cta{font-family:var(--font);font-weight:900;letter-spacing:.16em;font-size:clamp(16px,4.6vw,22px);
+    padding:16px 40px;border-radius:12px;border:2px solid var(--green);background:linear-gradient(180deg,#0b2a1c,#071a12);
+    color:var(--green);cursor:pointer;text-transform:uppercase;text-shadow:0 0 10px var(--green);
+    box-shadow:0 0 30px rgba(33,232,138,.25),inset 0 0 18px rgba(33,232,138,.08);transition:transform .08s,box-shadow .2s}
+  button.cta:hover{transform:translateY(-2px);box-shadow:0 0 46px rgba(33,232,138,.45),inset 0 0 18px rgba(33,232,138,.12)}
+  button.cta:active{transform:translateY(1px)}
+  button.ghost{font-family:var(--font);letter-spacing:.14em;font-size:13px;padding:11px 22px;border-radius:10px;
+    border:1px solid var(--grid);background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase}
+  button.ghost:hover{color:var(--ink);border-color:var(--muted)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .stat{font-size:clamp(13px,3.6vw,16px)}
+  .stat b{color:var(--amber);font-size:1.35em}
+  .big{font-size:clamp(34px,9vw,64px);font-weight:900;color:#fff}
+  .big.win{color:var(--green);text-shadow:0 0 20px var(--green)}
+  .big.bust{color:var(--red);text-shadow:0 0 20px var(--red)}
+  .seedline{color:var(--muted);font-size:11px;letter-spacing:.2em}
+  .lb{width:min(420px,92vw);border:1px solid var(--grid);border-radius:10px;background:rgba(10,15,28,.6);
+    padding:10px 14px;text-align:left;font-size:13px}
+  .lb h3{margin:0 0 8px;color:var(--cyan);letter-spacing:.2em;font-size:12px;font-weight:700;text-transform:uppercase}
+  .lb .ln{display:flex;justify-content:space-between;padding:3px 0;color:var(--muted)}
+  .lb .ln.me{color:var(--amber)} .lb .ln b{color:var(--ink);font-weight:400}
+  #mute{position:fixed;top:12px;right:14px;z-index:20;border:1px solid var(--grid);background:rgba(10,15,28,.7);
+    color:var(--muted);width:40px;height:40px;border-radius:9px;cursor:pointer;font-size:18px}
+  #mute:hover{color:var(--ink)}
+  .credit{position:fixed;bottom:10px;left:0;right:0;text-align:center;color:#2c3858;font-size:11px;letter-spacing:.2em;z-index:6;pointer-events:none}
+  .pausebox{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;background:rgba(5,7,13,.82);text-align:center;padding:24px}
+  .pausebox .pbig{font-size:clamp(32px,8vw,64px);font-weight:900;color:var(--amber);text-shadow:0 0 20px var(--amber);letter-spacing:.1em}
+  .pausebox .psub{color:var(--ink);font-size:clamp(13px,3.4vw,16px);max-width:420px;opacity:.85}
+  #errbox{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#2a0810;color:#ff8aa0;font-size:12px;
+    padding:10px 14px;white-space:pre-wrap;display:none;border-top:1px solid var(--red)}
+  @media (max-width:640px){ .how{line-height:1.55} }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game"></canvas></div>
+<div id="scan"></div>
+<button id="mute" title="Mute (M)">♪</button>
+<div class="credit">SCALP · ORYNTH GAME CUP S1</div>
+
+<!-- pause overlay (tab lost focus mid-round) -->
+<div id="pausebox" class="pausebox hidden">
+  <div class="pbig">⏸ PAUSED</div>
+  <div class="psub">Tab lost focus. Click anywhere or press any key to resume.</div>
+</div>
+<!-- on-screen error surface, so failures are never a silent blank -->
+<div id="errbox"></div>
+
+<!-- TITLE -->
+<div class="overlay" id="screen-title">
+  <div class="tag">Orynth Game Cup · Season 1</div>
+  <h1>SCALP<span class="cur">_</span></h1>
+  <div class="tag">read the tape · don't get liquidated</div>
+  <div class="how">
+    The tape scrolls. Go <b class="g">LONG</b> when it climbs, <b class="r">SHORT</b> when it dives.
+    You earn while your position agrees with the move and bleed when it doesn't.
+    Chain green ticks to build your <b class="a">COMBO</b> multiplier. Hit zero margin and you're
+    <b class="r">LIQUIDATED</b>. Survive 60 seconds and bank the biggest book.
+  </div>
+  <div class="keys">
+    <span class="kbd"><b style="color:var(--green)">▲ / W / tap-left</b> &nbsp;<small>LONG</small></span>
+    <span class="kbd"><b style="color:var(--red)">▼ / S / tap-right</b> &nbsp;<small>SHORT</small></span>
+    <span class="kbd"><b>SPACE / tap-mid</b> &nbsp;<small>FLATTEN</small></span>
+  </div>
+  <button class="cta" id="btn-start">Start Trading</button>
+  <div class="seedline" id="seedline">DAILY MARKET</div>
+</div>
+
+<!-- GAME OVER -->
+<div class="overlay hidden" id="screen-over">
+  <div class="tag" id="over-verdict">CLOSING BELL</div>
+  <div class="big" id="over-score">$0</div>
+  <div class="row">
+    <div class="stat">Peak book <b id="over-peak">$0</b></div>
+    <div class="stat">Best combo <b id="over-combo">x1</b></div>
+    <div class="stat">Best trade <b id="over-best">$0</b></div>
+  </div>
+  <div class="lb" id="leaderboard"></div>
+  <div class="row">
+    <button class="cta" id="btn-again">Trade Again</button>
+    <button class="ghost" id="btn-share">Copy Result</button>
+  </div>
+  <div class="seedline" id="over-seed"></div>
+</div>
+
+<script>
+"use strict";
+// surface any runtime error on screen instead of a silent blank canvas
+window.addEventListener('error',ev=>{
+  var b=document.getElementById('errbox'); if(b){ b.style.display='block';
+    b.textContent='⚠ '+(ev.message||'error')+(ev.filename?(' @ '+ev.filename.split('/').pop()+':'+ev.lineno):''); }
+});
+(function(){
+/* ---------- deterministic daily market ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function dailySeed(){const d=new Date();return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+const SEED=dailySeed();
+
+/* ---------- canvas setup ---------- */
+const cv=document.getElementById('game'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize',resize); resize();
+
+/* ---------- audio (Web Audio chiptune) ---------- */
+const Audio={ctx:null,muted:false,master:null};
+function aInit(){ if(Audio.ctx) return; try{ Audio.ctx=new (window.AudioContext||window.webkitAudioContext)(); Audio.master=Audio.ctx.createGain(); Audio.master.gain.value=0.22; Audio.master.connect(Audio.ctx.destination);}catch(e){} }
+function beep(freq,dur,type,vol,slideTo){ if(!Audio.ctx||Audio.muted) return; const t=Audio.ctx.currentTime; const o=Audio.ctx.createOscillator(),g=Audio.ctx.createGain(); o.type=type||'square'; o.frequency.setValueAtTime(freq,t); if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo,t+dur); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.3,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(Audio.master); o.start(t); o.stop(t+dur+0.02); }
+function sfxLong(){beep(330,0.12,'square',0.32,660);}
+function sfxShort(){beep(300,0.12,'square',0.32,150);}
+function sfxFlat(){beep(220,0.06,'sine',0.22);}
+function sfxCombo(n){beep(440+Math.min(n,12)*40,0.07,'square',0.22);}
+function sfxLiq(){beep(180,0.5,'sawtooth',0.42,40);beep(90,0.6,'square',0.3,30);}
+function sfxBell(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.5,'triangle',0.3),i*90));}
+let tickAcc=0; // ambient ledger ticks
+function sfxTick(){beep(1200,0.02,'square',0.06);}
+
+const muteBtn=document.getElementById('mute');
+function applyMute(){ muteBtn.textContent=Audio.muted?'✕':'♪'; muteBtn.style.color=Audio.muted?'var(--red)':'var(--muted)'; }
+muteBtn.addEventListener('click',()=>{Audio.muted=!Audio.muted; applyMute();});
+
+/* ---------- game state ---------- */
+const ST={TITLE:0,PLAY:1,OVER:2};
+let state=ST.TITLE;
+const ROUND_TIME=60.0;
+let rng, price=100, prevPrice=100, balance, position=0, entryPrice, posSize, combo=0, bestCombo,
+    timeLeft, peakBook, bestTrade, tradePL, vol, drift, lastTickPL=0, flashDir, liquidated;
+// initialized up-front so the render loop is safe before the first game starts
+let history=[], popups=[], t=0, shake=0;
+let whaleTimer, marqueeFlash=0;
+
+const START_BALANCE=1000, LEVERAGE=6, MARGIN_CALL=0; // liquidate at <=0
+const TICK=1/60;
+
+function reset(){
+  rng=mulberry32(SEED^0x9e3779b9);
+  price=100; prevPrice=100;
+  balance=START_BALANCE; peakBook=START_BALANCE;
+  position=0; entryPrice=0; posSize=0; tradePL=0; bestTrade=0;
+  combo=0; bestCombo=0; lastTickPL=0; flashDir=0; liquidated=false;
+  timeLeft=ROUND_TIME; vol=0.55; drift=0; t=0; shake=0;
+  history=[]; for(let i=0;i<240;i++){stepPrice();history.push(price);}
+  popups=[]; whaleTimer=2.2; marqueeFlash=0;
+}
+
+function stepPrice(){
+  prevPrice=price;
+  // mean-reverting random walk with momentum drift + occasional whale impulses
+  drift+= (rng()-0.5)*0.06; drift*=0.92;
+  let change=(rng()-0.5)*vol + drift - (price-100)*0.0009;
+  price+=change;
+  if(price<8) price=8;
+}
+
+/* book value = balance + unrealized pnl */
+function unrealized(){ return position!==0 ? position*posSize*(price-entryPrice) : 0; }
+function book(){ return balance+unrealized(); }
+
+function openPos(dir){
+  if(!Audio.ctx) aInit();
+  if(state!==ST.PLAY) return;
+  if(position===dir) return;
+  // realize current
+  if(position!==0){ realize(); }
+  position=dir; entryPrice=price;
+  posSize=LEVERAGE; // contracts
+  combo=0;
+  if(dir>0) sfxLong(); else sfxShort();
+  flashDir=dir; marqueeFlash=0.25;
+  popups.push({x:W*0.5,y:H*0.5,txt:dir>0?'LONG':'SHORT',col:dir>0?'#21e88a':'#ff3b5c',life:0.7,vy:-30,big:true});
+}
+function flatten(){
+  if(state!==ST.PLAY||position===0) return;
+  realize(); position=0; combo=0; sfxFlat();
+}
+function realize(){
+  const pl=position*posSize*(price-entryPrice);
+  balance+=pl; tradePL=pl;
+  if(pl>bestTrade) bestTrade=pl;
+  popups.push({x:W*0.5,y:H*0.42,txt:(pl>=0?'+':'')+fmt(pl),col:pl>=0?'#21e88a':'#ff3b5c',life:0.9,vy:-40});
+}
+
+function fmt(n){ const s=n<0?'-':''; n=Math.abs(Math.round(n)); return s+'$'+n.toLocaleString('en-US'); }
+
+/* ---------- main loop ---------- */
+let lastT=performance.now();
+let paused=false;
+function frame(now){
+  let dt=(now-lastT)/1000; lastT=now; if(dt>0.05) dt=0.05;
+  if(state===ST.PLAY && !paused) update(dt);
+  render(dt);
+  requestAnimationFrame(frame);
+}
+// If the tab is backgrounded mid-round, rAF freezes — pause the round so it's never an unfair/blank screen.
+const pauseBox=document.getElementById('pausebox');
+function showPause(on){ paused=on; if(pauseBox) pauseBox.classList.toggle('hidden',!on); }
+function resumePlay(){ if(state===ST.PLAY && paused){ lastT=performance.now(); showPause(false); } }
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ if(state===ST.PLAY) showPause(true); }
+  else { lastT=performance.now(); requestAnimationFrame(frame); } // kick the loop back to life on refocus
+});
+window.addEventListener('blur',()=>{ if(state===ST.PLAY) showPause(true); });
+window.addEventListener('focus',()=>{ lastT=performance.now(); requestAnimationFrame(frame); });
+
+function update(dt){
+  t+=dt; timeLeft-=dt;
+  // difficulty ramp: volatility climbs over the round
+  vol=0.55+ (ROUND_TIME-timeLeft)/ROUND_TIME*1.7;
+  // price stepping at fixed cadence independent of fps
+  priceAcc+=dt;
+  while(priceAcc>=TICK){
+    priceAcc-=TICK;
+    stepPrice();
+    history.push(price); if(history.length>320) history.shift();
+    // per-tick pnl + combo
+    const tickPL=position*posSize*(price-prevPrice);
+    lastTickPL=tickPL;
+    if(position!==0){
+      if(tickPL>0){ combo++; if(combo>bestCombo)bestCombo=combo; if(combo%3===0){sfxCombo(combo);} }
+      else if(tickPL<0){ combo=0; }
+    }
+    // book tracking + liquidation
+    const bk=book();
+    if(bk>peakBook) peakBook=bk;
+    if(bk<=MARGIN_CALL){ liquidate(); return; }
+    if((history.length&3)===0){ sfxTick(); }
+  }
+  // whale events: sudden volatility spike with telegraph
+  whaleTimer-=dt;
+  if(whaleTimer<=0){
+    whaleTimer=3.5+rng()*4;
+    drift+=(rng()<0.5?-1:1)*(1.4+rng()*1.6);
+    marqueeFlash=0.4;
+    popups.push({x:W*0.5,y:H*0.2,txt:'⚡ WHALE',col:'#ffd54a',life:0.8,vy:-20});
+    beep(140,0.25,'sawtooth',0.3,520);
+  }
+  if(marqueeFlash>0) marqueeFlash-=dt;
+  if(shake>0) shake-=dt*60;
+  // popups
+  for(const p of popups){ p.life-=dt; p.y+=p.vy*dt; }
+  popups=popups.filter(p=>p.life>0);
+
+  if(timeLeft<=0){ timeLeft=0; closingBell(); }
+}
+let priceAcc=0;
+
+function liquidate(){
+  liquidated=true; shake=24; sfxLiq();
+  balance=0; position=0;
+  popups.push({x:W*0.5,y:H*0.45,txt:'LIQUIDATED',col:'#ff3b5c',life:1.4,vy:-10,big:true});
+  setTimeout(gameOver,900);
+}
+function closingBell(){
+  if(position!==0) realize();
+  sfxBell(); shake=8;
+  setTimeout(gameOver,500);
+}
+
+/* ---------- rendering ---------- */
+function render(dt){
+  ctx.clearRect(0,0,W,H);
+  // bg
+  ctx.fillStyle='#05070d'; ctx.fillRect(0,0,W,H);
+  let ox=0,oy=0;
+  if(shake>0){ ox=(Math.random()-0.5)*shake; oy=(Math.random()-0.5)*shake; }
+  ctx.save(); ctx.translate(ox,oy);
+  drawGrid();
+  if(state===ST.PLAY||state===ST.OVER) drawChart();
+  drawPopups();
+  ctx.restore();
+  if(state===ST.PLAY) drawHUD();
+}
+
+function drawGrid(){
+  ctx.strokeStyle='#10182b'; ctx.lineWidth=1;
+  const gx=64;
+  ctx.beginPath();
+  for(let x=0;x<=W;x+=gx){ ctx.moveTo(x,0); ctx.lineTo(x,H); }
+  for(let y=0;y<=H;y+=gx){ ctx.moveTo(0,y); ctx.lineTo(W,y); }
+  ctx.stroke();
+}
+
+function drawChart(){
+  const n=history.length; if(n<2) return;
+  // viewport price range
+  const view=history.slice(-Math.min(n,Math.floor(W/4)));
+  let lo=Infinity,hi=-Infinity;
+  for(const p of view){ if(p<lo)lo=p; if(p>hi)hi=p; }
+  const pad=(hi-lo)*0.18+2; lo-=pad; hi+=pad;
+  const topM=H*0.16, botM=H*0.16;
+  const Y=p=>{ return topM + (1-(p-lo)/(hi-lo))*(H-topM-botM); };
+  const X=i=>{ return (i/(view.length-1))*W; };
+
+  // entry line if in position
+  if(state===ST.PLAY && position!==0){
+    const ey=Y(entryPrice);
+    ctx.strokeStyle=position>0?'rgba(33,232,138,.5)':'rgba(255,59,92,.5)';
+    ctx.setLineDash([6,6]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(0,ey); ctx.lineTo(W,ey); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=position>0?'#21e88a':'#ff3b5c'; ctx.font='12px Courier New';
+    ctx.textAlign='left'; ctx.fillText('ENTRY '+entryPrice.toFixed(1),8,ey-6);
+  }
+
+  // area fill under line
+  const curCol = lastTickPL>=0 ? '#21e88a' : '#ff3b5c';
+  const lineCol = position!==0 ? (position>0?'#21e88a':'#ff3b5c') : '#46e8ff';
+  ctx.beginPath();
+  ctx.moveTo(0,H);
+  for(let i=0;i<view.length;i++){ ctx.lineTo(X(i),Y(view[i])); }
+  ctx.lineTo(W,H); ctx.closePath();
+  const grad=ctx.createLinearGradient(0,topM,0,H);
+  grad.addColorStop(0, hexA(lineCol,0.22)); grad.addColorStop(1,'rgba(5,7,13,0)');
+  ctx.fillStyle=grad; ctx.fill();
+
+  // the tape line
+  ctx.beginPath();
+  for(let i=0;i<view.length;i++){ const x=X(i),y=Y(view[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+  ctx.strokeStyle=lineCol; ctx.lineWidth=2.5; ctx.shadowColor=lineCol; ctx.shadowBlur=14;
+  ctx.stroke(); ctx.shadowBlur=0;
+
+  // price head marker
+  const hx=X(view.length-1), hy=Y(view[view.length-1]);
+  ctx.fillStyle=curCol; ctx.beginPath(); ctx.arc(hx,hy,5,0,7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 14px Courier New'; ctx.textAlign='right';
+  ctx.fillText(price.toFixed(2), hx-10, hy-12);
+}
+
+function hexA(hex,a){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+
+function drawPopups(){
+  ctx.textAlign='center';
+  for(const p of popups){
+    const a=Math.max(0,Math.min(1,p.life*1.4));
+    ctx.globalAlpha=a; ctx.fillStyle=p.col;
+    ctx.font=(p.big?'900 '+Math.round(Math.min(W,H)*0.07)+'px':'bold 22px')+' Courier New';
+    if(p.big){ctx.shadowColor=p.col;ctx.shadowBlur=20;}
+    ctx.fillText(p.txt,p.x,p.y); ctx.shadowBlur=0;
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawHUD(){
+  const bk=book();
+  // top bar
+  ctx.textAlign='left'; ctx.font='bold 13px Courier New'; ctx.fillStyle='#5d6b91';
+  ctx.fillText('BOOK',16,28);
+  ctx.font='900 30px Courier New';
+  ctx.fillStyle = bk>=START_BALANCE?'#21e88a':'#ff3b5c';
+  ctx.fillText(fmt(bk),16,58);
+  // unrealized
+  const u=unrealized();
+  if(position!==0){
+    ctx.font='bold 14px Courier New'; ctx.fillStyle=u>=0?'#21e88a':'#ff3b5c';
+    ctx.fillText((u>=0?'+':'')+fmt(u)+' open',16,80);
+  }
+
+  // timer (center)
+  ctx.textAlign='center';
+  const danger=timeLeft<=10;
+  ctx.font='900 '+(danger?34:30)+'px Courier New';
+  ctx.fillStyle=danger?(Math.floor(t*6)%2?'#ff3b5c':'#ffd54a'):'#cdd9ff';
+  ctx.fillText(timeLeft.toFixed(1),W/2,46);
+  ctx.font='10px Courier New'; ctx.fillStyle='#5d6b91'; ctx.fillText('SECONDS',W/2,62);
+
+  // combo (right)
+  ctx.textAlign='right';
+  ctx.font='bold 13px Courier New'; ctx.fillStyle='#5d6b91'; ctx.fillText('COMBO',W-16,28);
+  const cmul=1+combo*0.1;
+  ctx.font='900 30px Courier New'; ctx.fillStyle=combo>0?'#ffd54a':'#5d6b91';
+  ctx.fillText('x'+cmul.toFixed(1),W-16,58);
+  if(combo>=3){ ctx.font='bold 12px Courier New'; ctx.fillStyle='#ffd54a'; ctx.fillText(combo+' green streak',W-16,76); }
+
+  // position badge (bottom center)
+  ctx.textAlign='center';
+  const py=H-46;
+  let label='FLAT', col='#5d6b91';
+  if(position>0){label='● LONG '+LEVERAGE+'x';col='#21e88a';}
+  else if(position<0){label='● SHORT '+LEVERAGE+'x';col='#ff3b5c';}
+  ctx.font='900 22px Courier New'; ctx.fillStyle=col;
+  if(position!==0){ctx.shadowColor=col;ctx.shadowBlur=14;}
+  ctx.fillText(label,W/2,py); ctx.shadowBlur=0;
+
+  // touch hint zones (subtle, mobile)
+  if('ontouchstart' in window){
+    ctx.font='11px Courier New'; ctx.fillStyle='rgba(93,107,145,.5)'; ctx.textAlign='center';
+    ctx.fillText('▲ LONG',W*0.18,H-14);
+    ctx.fillText('FLAT',W*0.5,H-14);
+    ctx.fillText('SHORT ▼',W*0.82,H-14);
+  }
+}
+
+/* ---------- screens ---------- */
+const elTitle=document.getElementById('screen-title');
+const elOver=document.getElementById('screen-over');
+document.getElementById('seedline').textContent='DAILY MARKET #'+SEED;
+
+function startGame(){
+  aInit(); if(Audio.ctx&&Audio.ctx.state==='suspended')Audio.ctx.resume();
+  reset(); priceAcc=0; state=ST.PLAY;
+  elTitle.classList.add('hidden'); elOver.classList.add('hidden');
+}
+function gameOver(){
+  state=ST.OVER;
+  const finalBook=liquidated?0:Math.round(book());
+  saveScore(finalBook);
+  document.getElementById('over-verdict').textContent=liquidated?'LIQUIDATED — MARGIN GONE':'CLOSING BELL';
+  const sc=document.getElementById('over-score');
+  sc.textContent=fmt(finalBook); sc.className='big '+(liquidated||finalBook<START_BALANCE?'bust':'win');
+  document.getElementById('over-peak').textContent=fmt(peakBook);
+  document.getElementById('over-combo').textContent='x'+(1+bestCombo*0.1).toFixed(1);
+  document.getElementById('over-best').textContent=fmt(bestTrade);
+  document.getElementById('over-seed').textContent='DAILY MARKET #'+SEED+'  ·  everyone trades the same tape';
+  renderLeaderboard(finalBook);
+  window._lastResult={book:finalBook,combo:bestCombo,peak:peakBook};
+  elOver.classList.remove('hidden');
+}
+
+/* ---------- leaderboard (local, per daily seed) ---------- */
+function lbKey(){return 'scalp_lb_'+SEED;}
+function getScores(){ try{return JSON.parse(localStorage.getItem(lbKey())||'[]');}catch(e){return[];} }
+function saveScore(s){
+  const arr=getScores(); arr.push({s,t:Date.now()}); arr.sort((a,b)=>b.s-a.s);
+  localStorage.setItem(lbKey(),JSON.stringify(arr.slice(0,20)));
+  window._myScore=s;
+}
+function renderLeaderboard(myScore){
+  const arr=getScores().slice(0,5);
+  let html='<h3>Today\'s Best — Market #'+SEED+'</h3>';
+  if(!arr.length) html+='<div class="ln">No scores yet — you\'re first.</div>';
+  let mark=false;
+  arr.forEach((r,i)=>{
+    const me=(!mark && r.s===myScore); if(me)mark=true;
+    html+=`<div class="ln${me?' me':''}"><span>${me?'▸ ':''}#${i+1}</span><b>${fmt(r.s)}</b></div>`;
+  });
+  document.getElementById('leaderboard').innerHTML=html;
+}
+
+/* ---------- input ---------- */
+function press(action){
+  if(state===ST.TITLE){ if(action==='start')startGame(); return; }
+  if(state===ST.PLAY){
+    if(action==='long')openPos(1);
+    else if(action==='short')openPos(-1);
+    else if(action==='flat')flatten();
+  }
+}
+window.addEventListener('keydown',e=>{
+  if(e.repeat) return;
+  const k=e.key.toLowerCase();
+  if(k==='m'){Audio.muted=!Audio.muted;applyMute();return;}
+  if(state===ST.PLAY && paused){e.preventDefault();resumePlay();return;}
+  if(state===ST.TITLE && (k===' '||k==='enter')){e.preventDefault();startGame();return;}
+  if(state===ST.OVER && (k===' '||k==='enter')){e.preventDefault();startGame();return;}
+  if(state!==ST.PLAY) return;
+  if(k==='arrowup'||k==='w'){e.preventDefault();press('long');}
+  else if(k==='arrowdown'||k==='s'){e.preventDefault();press('short');}
+  else if(k===' '){e.preventDefault();press('flat');}
+});
+// pointer / touch zones during play
+cv.addEventListener('pointerdown',e=>{
+  if(state!==ST.PLAY) return;
+  if(paused){ resumePlay(); return; } // first tap after refocus just un-pauses
+  const x=e.clientX/W;
+  if(x<0.36) press('long');
+  else if(x>0.64) press('short');
+  else press('flat');
+});
+
+document.getElementById('btn-start').addEventListener('click',()=>startGame());
+document.getElementById('btn-again').addEventListener('click',()=>startGame());
+document.getElementById('btn-share').addEventListener('click',()=>{
+  const r=window._lastResult||{book:0,combo:0};
+  const txt=`SCALP — Orynth Game Cup\nBooked ${fmt(r.book)} on daily market #${SEED} (best combo x${(1+r.combo*0.1).toFixed(1)}).\nThink you can read the tape better? ${location.href}`;
+  navigator.clipboard&&navigator.clipboard.writeText(txt);
+  const b=document.getElementById('btn-share'); const o=b.textContent; b.textContent='Copied ✓'; setTimeout(()=>b.textContent=o,1400);
+});
+
+applyMute();
+requestAnimationFrame(frame);
+
+// Debug hook (harmless): lets a headless harness step + render when rAF is paused in a background tab.
+window.__pb={
+  start:startGame,
+  tick(n){ for(let i=0;i<(n||1);i++){ if(state===ST.PLAY) update(1/60); } },
+  draw(){ render(0); },
+  long(){press('long');}, short(){press('short');}, flat(){press('flat');},
+  snap(){ return {state,book:Math.round(book()),balance:Math.round(balance),price:+price.toFixed(2),
+    position,combo,bestCombo,peakBook:Math.round(peakBook),timeLeft:+timeLeft.toFixed(1),liquidated}; }
+};
+})();
+</script>
+</body>
+</html>
