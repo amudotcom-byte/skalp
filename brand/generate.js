@@ -1,8 +1,8 @@
-// Generates SCALP brand SVGs (logo + X banner) using the game's own price engine.
+// Generates SKALP brand SVGs (logo + X banner) using the game's own price engine.
 const fs = require('fs');
 const path = require('path');
 
-/* ---- SCALP palette (matches the game) ---- */
+/* ---- SKALP palette (matches the game) ---- */
 const C = {
   bg:'#05070d', panel:'#0a0f1c', grid:'#121b30',
   green:'#21e88a', greenDim:'#0f7a4a',
@@ -109,7 +109,7 @@ ${scan(W,H)}
 </g>
 
 <!-- wordmark -->
-<text x="58" y="270" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="150" letter-spacing="6" fill="url(#wm)" filter="url(#glowSoft)">SCALP</text>
+<text x="58" y="270" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="150" letter-spacing="6" fill="url(#wm)" filter="url(#glowSoft)">SKALP</text>
 <rect x="620" y="276" width="78" height="16" fill="${C.amber}" filter="url(#glowG)"/>
 
 <!-- tagline -->
@@ -143,13 +143,13 @@ ${defs()}
   <polygon points="${area}" fill="url(#areaG)"/>
   <polyline points="${poly(pts)}" fill="none" stroke="${C.green}" stroke-width="7" filter="url(#glowG)" stroke-linejoin="round" stroke-linecap="round"/>
   <circle cx="${head[0].toFixed(1)}" cy="${head[1].toFixed(1)}" r="14" fill="${C.green}" filter="url(#glowSoft)"/>
-  <!-- scalp cut: a bright diagonal slash -->
+  <!-- skalp cut: a bright diagonal slash -->
   <line x1="170" y1="690" x2="830" y2="470" stroke="#ffffff" stroke-width="3" opacity="0.18"/>
   ${scan(S,S)}
   <rect width="${S}" height="${S}" fill="url(#vig)"/>
 </g>
 <!-- wordmark -->
-<text x="${S/2}" y="780" text-anchor="middle" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="170" letter-spacing="8" fill="url(#wm)" filter="url(#glowSoft)">SCALP</text>
+<text x="${S/2}" y="780" text-anchor="middle" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="170" letter-spacing="8" fill="url(#wm)" filter="url(#glowSoft)">SKALP</text>
 <rect x="772" y="788" width="60" height="16" fill="${C.amber}" filter="url(#glowG)"/>
 <text x="${S/2}" y="846" text-anchor="middle" font-family="Menlo,'Courier New',monospace" font-size="26" letter-spacing="11" fill="${C.muted}">READ · LONG · SHORT · SURVIVE</text>
 </svg>`;

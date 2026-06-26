@@ -32,7 +32,7 @@
 </g>
 
 <!-- wordmark -->
-<text x="58" y="270" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="150" letter-spacing="6" fill="url(#wm)" filter="url(#glowSoft)">SCALP</text>
+<text x="58" y="270" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="150" letter-spacing="6" fill="url(#wm)" filter="url(#glowSoft)">SKALP</text>
 <rect x="620" y="276" width="78" height="16" fill="#ffd54a" filter="url(#glowG)"/>
 
 <!-- tagline -->

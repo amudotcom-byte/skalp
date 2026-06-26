@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta name="theme-color" content="#05070d" />
-<title>SCALP — 60-Second Trading Floor</title>
+<title>SKALP — 60-Second Trading Floor</title>
 <meta name="description" content="Read the tape. Long, short, slam-close. Survive 60 seconds on the trading floor without getting liquidated." />
 <style>
   :root{
@@ -82,7 +82,7 @@
 <div id="wrap"><canvas id="game"></canvas></div>
 <div id="scan"></div>
 <button id="mute" title="Mute (M)">♪</button>
-<div class="credit">SCALP · ORYNTH GAME CUP S1</div>
+<div class="credit">SKALP · ORYNTH GAME CUP S1</div>
 
 <!-- pause overlay (tab lost focus mid-round) -->
 <div id="pausebox" class="pausebox hidden">
@@ -95,7 +95,7 @@
 <!-- TITLE -->
 <div class="overlay" id="screen-title">
   <div class="tag">Orynth Game Cup · Season 1</div>
-  <h1>SCALP<span class="cur">_</span></h1>
+  <h1>SKALP<span class="cur">_</span></h1>
   <div class="tag">read the tape · don't get liquidated</div>
   <div class="how">
     The tape scrolls. Go <b class="g">LONG</b> when it climbs, <b class="r">SHORT</b> when it dives.
@@ -477,7 +477,7 @@ function gameOver(){
 }
 
 /* ---------- leaderboard (local, per daily seed) ---------- */
-function lbKey(){return 'scalp_lb_'+SEED;}
+function lbKey(){return 'skalp_lb_'+SEED;}
 function getScores(){ try{return JSON.parse(localStorage.getItem(lbKey())||'[]');}catch(e){return[];} }
 function saveScore(s){
   const arr=getScores(); arr.push({s,t:Date.now()}); arr.sort((a,b)=>b.s-a.s);
@@ -532,7 +532,7 @@ document.getElementById('btn-again').addEventListener('click',()=>startGame());
 
 /* ---------- shareable score card ---------- */
 let cardData=null;
-const PLAY_URL='https://amudotcom-byte.github.io/scalp/';
+const PLAY_URL='https://amudotcom-byte.github.io/skalp/';
 function buildScoreCard(){
   const d=cardData||{book:0,peak:0,combo:0,best:0,liquidated:false,seed:SEED,hist:[100,100],rank:0,total:0,win:false};
   const CW=1080, CH=1350, c=document.createElement('canvas'); c.width=CW; c.height=CH;
@@ -548,7 +548,7 @@ function buildScoreCard(){
   x.textAlign='left'; x.fillStyle=COL.muted; x.font='600 25px Courier New';
   x.fillText('● ORYNTH GAME CUP · SEASON 1',70,96);
   x.textAlign='right'; x.fillStyle='#fff'; x.font='900 64px Courier New'; x.shadowColor=COL.cyan; x.shadowBlur=24;
-  x.fillText('SCALP',CW-90,102); x.shadowBlur=0; x.fillStyle=COL.amber; x.fillRect(CW-84,114,40,10);
+  x.fillText('SKALP',CW-90,102); x.shadowBlur=0; x.fillStyle=COL.amber; x.fillRect(CW-84,114,40,10);
   // hero chart from the final tape
   const hist=(d.hist&&d.hist.length>2)?d.hist:[100,100];
   const cx0=70,cx1=CW-70,cy0=210,cy1=640;
@@ -579,11 +579,11 @@ function buildScoreCard(){
   x.strokeStyle=COL.grid; x.beginPath(); x.moveTo(70,1242); x.lineTo(CW-70,1242); x.stroke();
   x.fillStyle=COL.muted; x.font='600 25px Courier New'; x.fillText('DAILY MARKET #'+d.seed,CW/2,1286);
   x.fillStyle=COL.green; x.font='800 31px Courier New'; x.shadowColor=COL.green; x.shadowBlur=10;
-  x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/scalp',CW/2,1330); x.shadowBlur=0;
+  x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/skalp',CW/2,1330); x.shadowBlur=0;
   return c;
 }
 function cardBlob(){ return new Promise(res=>buildScoreCard().toBlob(b=>res(b),'image/png')); }
-function shareText(){ const d=cardData||{book:0,seed:SEED}; return `I booked ${fmt(d.book)} in 60 seconds on SCALP 📈 (daily market #${d.seed}). Think you can read the tape better?`; }
+function shareText(){ const d=cardData||{book:0,seed:SEED}; return `I booked ${fmt(d.book)} in 60 seconds on SKALP 📈 (daily market #${d.seed}). Think you can read the tape better?`; }
 function downloadBlob(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); }
 function flash(btn,msg,ms){ const o=btn.dataset.label||btn.textContent; btn.dataset.label=o; btn.textContent=msg; setTimeout(()=>btn.textContent=o,ms||1700); }
 
@@ -591,15 +591,15 @@ async function smartShare(){
   const b=document.getElementById('btn-share');
   try{
     const blob=await cardBlob();
-    const file=new File([blob],'scalp-score.png',{type:'image/png'});
+    const file=new File([blob],'skalp-score.png',{type:'image/png'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       await navigator.share({files:[file], text:shareText()+'\n'+PLAY_URL});
       flash(b,'Shared ✓');
-    } else { downloadBlob(blob,'scalp-score.png'); flash(b,'Saved ✓ — attach to your post',2400); }
-  }catch(e){ if(String(e).indexOf('AbortError')>=0) return; try{downloadBlob(await cardBlob(),'scalp-score.png'); flash(b,'Saved ✓',2000);}catch(_){ flash(b,'Could not share'); } }
+    } else { downloadBlob(blob,'skalp-score.png'); flash(b,'Saved ✓ — attach to your post',2400); }
+  }catch(e){ if(String(e).indexOf('AbortError')>=0) return; try{downloadBlob(await cardBlob(),'skalp-score.png'); flash(b,'Saved ✓',2000);}catch(_){ flash(b,'Could not share'); } }
 }
 document.getElementById('btn-share').addEventListener('click',smartShare);
-document.getElementById('btn-save').addEventListener('click',async e=>{ downloadBlob(await cardBlob(),'scalp-score.png'); flash(e.currentTarget,'Saved ✓'); });
+document.getElementById('btn-save').addEventListener('click',async e=>{ downloadBlob(await cardBlob(),'skalp-score.png'); flash(e.currentTarget,'Saved ✓'); });
 document.getElementById('btn-x').addEventListener('click',()=>{ window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(shareText())+'&url='+encodeURIComponent(PLAY_URL),'_blank','noopener'); });
 document.getElementById('btn-copy').addEventListener('click',async e=>{ const el=e.currentTarget;
   try{ if(navigator.clipboard&&window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'image/png':await cardBlob()})]); flash(el,'Image copied ✓'); }
@@ -621,7 +621,7 @@ function drawReelFrame(x,W,H,t){
   // header
   x.textAlign='left'; x.fillStyle=COL.muted; x.font='600 20px Courier New'; x.fillText('● ORYNTH GAME CUP · S1',40,64);
   x.textAlign='right'; x.fillStyle='#fff'; x.font='900 48px Courier New'; x.shadowColor=COL.cyan; x.shadowBlur=18;
-  x.fillText('SCALP',W-44,72); x.shadowBlur=0; x.fillStyle=COL.amber; x.fillRect(W-40,82,30,8);
+  x.fillText('SKALP',W-44,72); x.shadowBlur=0; x.fillStyle=COL.amber; x.fillRect(W-40,82,30,8);
   // progressive tape
   const hist=(d.hist&&d.hist.length>2)?d.hist:[100,100];
   const cx0=40,cx1=W-40,cy0=160,cy1=560;
@@ -658,7 +658,7 @@ function drawReelFrame(x,W,H,t){
       x.fillStyle=COL.ink; x.font='900 34px Courier New'; x.fillText(cc[1],colx,sy+40);});
     x.globalAlpha=Math.max(0,Math.min(1,(t-3.8)/0.5));
     x.fillStyle=COL.green; x.font='800 23px Courier New'; x.shadowColor=COL.green; x.shadowBlur=8;
-    x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/scalp',W/2,1196); x.shadowBlur=0;
+    x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/skalp',W/2,1196); x.shadowBlur=0;
     x.globalAlpha=1;
   }
 }
@@ -694,9 +694,9 @@ async function recordAndShare(btn){
   try{
     const {blob,ext}=await buildReel();
     if(!blob.size){ flash(btn,'Record failed'); return; }
-    const file=new File([blob],'scalp-clip.'+ext,{type:blob.type});
+    const file=new File([blob],'skalp-clip.'+ext,{type:blob.type});
     if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], text:shareText()+'\n'+PLAY_URL}); flash(btn,'Shared ✓'); }
-    else { downloadBlob(blob,'scalp-clip.'+ext); flash(btn,'Saved clip ✓ ('+ext+')',2400); }
+    else { downloadBlob(blob,'skalp-clip.'+ext); flash(btn,'Saved clip ✓ ('+ext+')',2400); }
   }catch(e){ if(String(e).indexOf('AbortError')>=0){ flash(btn,'🎬 5s clip'); return; } flash(btn,'Record failed'); }
 }
 document.getElementById('btn-clip').addEventListener('click',e=>recordAndShare(e.currentTarget));
