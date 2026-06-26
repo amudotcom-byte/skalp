@@ -2,7 +2,7 @@
 
 **A 60-second browser trading-floor reflex game.** Read the tape, go long or short, slam-close before it reverses — and don't get liquidated.
 
-▶ **Play:** https://amudotcom-byte.github.io/skalp/
+▶ **Play:** https://skalp.fun/
 
 Built for the [Orynth Game Cup 2026 — Season 1](https://www.orynth.dev/cup).
 

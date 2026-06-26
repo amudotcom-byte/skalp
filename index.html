@@ -532,7 +532,7 @@ document.getElementById('btn-again').addEventListener('click',()=>startGame());
 
 /* ---------- shareable score card ---------- */
 let cardData=null;
-const PLAY_URL='https://amudotcom-byte.github.io/skalp/';
+const PLAY_URL='https://skalp.fun/';
 function buildScoreCard(){
   const d=cardData||{book:0,peak:0,combo:0,best:0,liquidated:false,seed:SEED,hist:[100,100],rank:0,total:0,win:false};
   const CW=1080, CH=1350, c=document.createElement('canvas'); c.width=CW; c.height=CH;
@@ -579,7 +579,7 @@ function buildScoreCard(){
   x.strokeStyle=COL.grid; x.beginPath(); x.moveTo(70,1242); x.lineTo(CW-70,1242); x.stroke();
   x.fillStyle=COL.muted; x.font='600 25px Courier New'; x.fillText('DAILY MARKET #'+d.seed,CW/2,1286);
   x.fillStyle=COL.green; x.font='800 31px Courier New'; x.shadowColor=COL.green; x.shadowBlur=10;
-  x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/skalp',CW/2,1330); x.shadowBlur=0;
+  x.fillText('▶ PLAY FREE · skalp.fun',CW/2,1330); x.shadowBlur=0;
   return c;
 }
 function cardBlob(){ return new Promise(res=>buildScoreCard().toBlob(b=>res(b),'image/png')); }
@@ -658,7 +658,7 @@ function drawReelFrame(x,W,H,t){
       x.fillStyle=COL.ink; x.font='900 34px Courier New'; x.fillText(cc[1],colx,sy+40);});
     x.globalAlpha=Math.max(0,Math.min(1,(t-3.8)/0.5));
     x.fillStyle=COL.green; x.font='800 23px Courier New'; x.shadowColor=COL.green; x.shadowBlur=8;
-    x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/skalp',W/2,1196); x.shadowBlur=0;
+    x.fillText('▶ PLAY FREE · skalp.fun',W/2,1196); x.shadowBlur=0;
     x.globalAlpha=1;
   }
 }
