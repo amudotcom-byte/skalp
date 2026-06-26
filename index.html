@@ -47,6 +47,10 @@
   button.ghost{font-family:var(--font);letter-spacing:.14em;font-size:13px;padding:11px 22px;border-radius:10px;
     border:1px solid var(--grid);background:transparent;color:var(--muted);cursor:pointer;text-transform:uppercase}
   button.ghost:hover{color:var(--ink);border-color:var(--muted)}
+  button.cta.share{border-color:var(--cyan);color:var(--cyan);background:linear-gradient(180deg,#08222b,#06161c);text-shadow:0 0 10px var(--cyan);
+    box-shadow:0 0 30px rgba(70,232,255,.25),inset 0 0 18px rgba(70,232,255,.08)}
+  button.cta.share:hover{box-shadow:0 0 46px rgba(70,232,255,.45),inset 0 0 18px rgba(70,232,255,.12)}
+  .subrow{margin-top:-4px}
   .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
   .stat{font-size:clamp(13px,3.6vw,16px)}
   .stat b{color:var(--amber);font-size:1.35em}
@@ -118,7 +122,12 @@
   <div class="lb" id="leaderboard"></div>
   <div class="row">
     <button class="cta" id="btn-again">Trade Again</button>
-    <button class="ghost" id="btn-share">Copy Result</button>
+    <button class="cta share" id="btn-share">📸 Share Score</button>
+  </div>
+  <div class="row subrow">
+    <button class="ghost" id="btn-save">Save image</button>
+    <button class="ghost" id="btn-x">Post to X</button>
+    <button class="ghost" id="btn-copy">Copy text</button>
   </div>
   <div class="seedline" id="over-seed"></div>
 </div>
@@ -456,7 +465,11 @@ function gameOver(){
   document.getElementById('over-best').textContent=fmt(bestTrade);
   document.getElementById('over-seed').textContent='DAILY MARKET #'+SEED+'  ·  everyone trades the same tape';
   renderLeaderboard(finalBook);
+  // compute today's rank for the share card
+  const scores=getScores(); let rank=scores.findIndex(r=>r.s===finalBook); rank=rank<0?scores.length:rank+1;
   window._lastResult={book:finalBook,combo:bestCombo,peak:peakBook};
+  cardData={book:finalBook,peak:Math.round(peakBook),combo:bestCombo,best:Math.round(bestTrade),
+    liquidated:liquidated,seed:SEED,hist:history.slice(),rank:rank,total:scores.length,win:!liquidated&&finalBook>=START_BALANCE};
   elOver.classList.remove('hidden');
 }
 
@@ -513,12 +526,82 @@ cv.addEventListener('pointerdown',e=>{
 
 document.getElementById('btn-start').addEventListener('click',()=>startGame());
 document.getElementById('btn-again').addEventListener('click',()=>startGame());
-document.getElementById('btn-share').addEventListener('click',()=>{
-  const r=window._lastResult||{book:0,combo:0};
-  const txt=`SCALP — Orynth Game Cup\nBooked ${fmt(r.book)} on daily market #${SEED} (best combo x${(1+r.combo*0.1).toFixed(1)}).\nThink you can read the tape better? ${location.href}`;
-  navigator.clipboard&&navigator.clipboard.writeText(txt);
-  const b=document.getElementById('btn-share'); const o=b.textContent; b.textContent='Copied ✓'; setTimeout(()=>b.textContent=o,1400);
-});
+
+/* ---------- shareable score card ---------- */
+let cardData=null;
+const PLAY_URL='https://amudotcom-byte.github.io/scalp/';
+function buildScoreCard(){
+  const d=cardData||{book:0,peak:0,combo:0,best:0,liquidated:false,seed:SEED,hist:[100,100],rank:0,total:0,win:false};
+  const CW=1080, CH=1350, c=document.createElement('canvas'); c.width=CW; c.height=CH;
+  const x=c.getContext('2d');
+  const COL={bg:'#05070d',grid:'#121b30',green:'#21e88a',red:'#ff3b5c',cyan:'#46e8ff',amber:'#ffd54a',ink:'#cdd9ff',muted:'#5d6b91'};
+  const accent=d.liquidated?COL.red:(d.win?COL.green:COL.amber);
+  x.fillStyle=COL.bg; x.fillRect(0,0,CW,CH);
+  x.strokeStyle=COL.grid; x.lineWidth=1; x.beginPath();
+  for(let gx=0;gx<=CW;gx+=60){x.moveTo(gx,0);x.lineTo(gx,CH);}
+  for(let gy=0;gy<=CH;gy+=60){x.moveTo(0,gy);x.lineTo(CW,gy);}
+  x.stroke();
+  // header
+  x.textAlign='left'; x.fillStyle=COL.muted; x.font='600 25px Courier New';
+  x.fillText('● ORYNTH GAME CUP · SEASON 1',70,96);
+  x.textAlign='right'; x.fillStyle='#fff'; x.font='900 64px Courier New'; x.shadowColor=COL.cyan; x.shadowBlur=24;
+  x.fillText('SCALP',CW-90,102); x.shadowBlur=0; x.fillStyle=COL.amber; x.fillRect(CW-84,114,40,10);
+  // hero chart from the final tape
+  const hist=(d.hist&&d.hist.length>2)?d.hist:[100,100];
+  const cx0=70,cx1=CW-70,cy0=210,cy1=640;
+  let lo=Math.min.apply(null,hist),hi=Math.max.apply(null,hist);const pad=(hi-lo)*0.12+1;lo-=pad;hi+=pad;
+  const HX=i=>cx0+(i/(hist.length-1))*(cx1-cx0),HY=v=>cy1-((v-lo)/(hi-lo))*(cy1-cy0);
+  x.beginPath(); x.moveTo(cx0,cy1);
+  for(let i=0;i<hist.length;i++) x.lineTo(HX(i),HY(hist[i]));
+  x.lineTo(cx1,cy1); x.closePath();
+  const g=x.createLinearGradient(0,cy0,0,cy1); g.addColorStop(0,hexA(accent,.28)); g.addColorStop(1,hexA(accent,0));
+  x.fillStyle=g; x.fill();
+  x.beginPath(); for(let i=0;i<hist.length;i++){const px=HX(i),py=HY(hist[i]);i?x.lineTo(px,py):x.moveTo(px,py);}
+  x.strokeStyle=accent; x.lineWidth=5; x.lineJoin='round'; x.shadowColor=accent; x.shadowBlur=22; x.stroke(); x.shadowBlur=0;
+  x.fillStyle=accent; x.beginPath(); x.arc(HX(hist.length-1),HY(hist[hist.length-1]),11,0,7); x.fill();
+  // verdict + score
+  x.textAlign='center';
+  x.fillStyle=accent; x.font='800 38px Courier New'; x.shadowColor=accent; x.shadowBlur=12;
+  x.fillText(d.liquidated?'LIQUIDATED':'CLOSING BELL',CW/2,768); x.shadowBlur=0;
+  x.fillStyle=COL.muted; x.font='600 29px Courier New'; x.fillText('FINAL BOOK',CW/2,830);
+  x.fillStyle='#fff'; x.font='900 168px Courier New'; x.shadowColor=accent; x.shadowBlur=30;
+  x.fillText(fmt(d.book),CW/2,980); x.shadowBlur=0;
+  if(d.total>1){ x.fillStyle=COL.amber; x.font='700 30px Courier New'; x.fillText('#'+d.rank+' of '+d.total+" on today's market",CW/2,1038); }
+  // stats
+  const sy=1142, cols=[['PEAK BOOK',fmt(d.peak)],['BEST COMBO','x'+(1+d.combo*0.1).toFixed(1)],['BEST TRADE',fmt(d.best)]];
+  cols.forEach((cc,i)=>{const colx=CW*(i+0.5)/3;
+    x.fillStyle=COL.muted; x.font='600 24px Courier New'; x.fillText(cc[0],colx,sy);
+    x.fillStyle=COL.ink; x.font='900 46px Courier New'; x.fillText(cc[1],colx,sy+52);});
+  // footer
+  x.strokeStyle=COL.grid; x.beginPath(); x.moveTo(70,1242); x.lineTo(CW-70,1242); x.stroke();
+  x.fillStyle=COL.muted; x.font='600 25px Courier New'; x.fillText('DAILY MARKET #'+d.seed,CW/2,1286);
+  x.fillStyle=COL.green; x.font='800 31px Courier New'; x.shadowColor=COL.green; x.shadowBlur=10;
+  x.fillText('▶ PLAY FREE · amudotcom-byte.github.io/scalp',CW/2,1330); x.shadowBlur=0;
+  return c;
+}
+function cardBlob(){ return new Promise(res=>buildScoreCard().toBlob(b=>res(b),'image/png')); }
+function shareText(){ const d=cardData||{book:0,seed:SEED}; return `I booked ${fmt(d.book)} in 60 seconds on SCALP 📈 (daily market #${d.seed}). Think you can read the tape better?`; }
+function downloadBlob(blob,name){ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); }
+function flash(btn,msg,ms){ const o=btn.dataset.label||btn.textContent; btn.dataset.label=o; btn.textContent=msg; setTimeout(()=>btn.textContent=o,ms||1700); }
+
+async function smartShare(){
+  const b=document.getElementById('btn-share');
+  try{
+    const blob=await cardBlob();
+    const file=new File([blob],'scalp-score.png',{type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], text:shareText()+'\n'+PLAY_URL});
+      flash(b,'Shared ✓');
+    } else { downloadBlob(blob,'scalp-score.png'); flash(b,'Saved ✓ — attach to your post',2400); }
+  }catch(e){ if(String(e).indexOf('AbortError')>=0) return; try{downloadBlob(await cardBlob(),'scalp-score.png'); flash(b,'Saved ✓',2000);}catch(_){ flash(b,'Could not share'); } }
+}
+document.getElementById('btn-share').addEventListener('click',smartShare);
+document.getElementById('btn-save').addEventListener('click',async e=>{ downloadBlob(await cardBlob(),'scalp-score.png'); flash(e.currentTarget,'Saved ✓'); });
+document.getElementById('btn-x').addEventListener('click',()=>{ window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(shareText())+'&url='+encodeURIComponent(PLAY_URL),'_blank','noopener'); });
+document.getElementById('btn-copy').addEventListener('click',async e=>{ const el=e.currentTarget;
+  try{ if(navigator.clipboard&&window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'image/png':await cardBlob()})]); flash(el,'Image copied ✓'); }
+    else { await navigator.clipboard.writeText(shareText()+'\n'+PLAY_URL); flash(el,'Text copied ✓'); } }
+  catch(_){ try{ await navigator.clipboard.writeText(shareText()+'\n'+PLAY_URL); flash(el,'Text copied ✓'); }catch(__){ flash(el,'Copy failed'); } } });
 
 applyMute();
 requestAnimationFrame(frame);
@@ -530,7 +613,9 @@ window.__pb={
   draw(){ render(0); },
   long(){press('long');}, short(){press('short');}, flat(){press('flat');},
   snap(){ return {state,book:Math.round(book()),balance:Math.round(balance),price:+price.toFixed(2),
-    position,combo,bestCombo,peakBook:Math.round(peakBook),timeLeft:+timeLeft.toFixed(1),liquidated}; }
+    position,combo,bestCombo,peakBook:Math.round(peakBook),timeLeft:+timeLeft.toFixed(1),liquidated}; },
+  card(){ const c=buildScoreCard(); const old=document.getElementById('__card'); if(old)old.remove();
+    c.id='__card'; c.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);height:94vh;width:auto;z-index:999;box-shadow:0 0 40px #000'; document.body.appendChild(c); return 'card shown'; }
 };
 })();
 </script>
