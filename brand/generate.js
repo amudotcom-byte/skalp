@@ -108,12 +108,9 @@ ${scan(W,H)}
   <text x="38" y="22" font-family="Menlo,'Courier New',monospace" font-size="14" letter-spacing="3" fill="${C.muted}">ORYNTH GAME CUP · SEASON 1</text>
 </g>
 
-<!-- wordmark -->
-<text x="58" y="270" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="150" letter-spacing="6" fill="url(#wm)" filter="url(#glowSoft)">SKALP</text>
-<rect x="620" y="276" width="78" height="16" fill="${C.amber}" filter="url(#glowG)"/>
-
-<!-- tagline -->
-<text x="62" y="330" font-family="Menlo,'Courier New',monospace" font-size="26" letter-spacing="7" fill="${C.ink}" opacity="0.92">READ THE TAPE<tspan fill="${C.muted}">  ·  </tspan>DON'T GET LIQUIDATED</text>
+<!-- wordmark + tagline: centered and raised into the upper band so the round profile photo (bottom-left) never covers them -->
+<text x="${W/2}" y="214" text-anchor="middle" font-family="Menlo,'Courier New',monospace" font-weight="900" font-size="144" letter-spacing="6" fill="url(#wm)" filter="url(#glowSoft)">SKALP</text>
+<text x="${W/2}" y="272" text-anchor="middle" font-family="Menlo,'Courier New',monospace" font-size="25" letter-spacing="7" fill="${C.ink}" opacity="0.92">READ THE TAPE<tspan fill="${C.muted}">  ·  </tspan>DON'T GET LIQUIDATED</text>
 
 <!-- right ticker -->
 <g transform="translate(1140,392)" opacity="0.95" font-family="Menlo,'Courier New',monospace">
