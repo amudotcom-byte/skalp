@@ -77,6 +77,12 @@
     padding:10px 14px;white-space:pre-wrap;display:none;border-top:1px solid var(--red)}
   @media (max-width:640px){ .how{line-height:1.55} }
 </style>
+<script>
+// skalp.fun visit beacon -> Telegram (one ping per browser session; refreshes don't re-ping)
+(function(){try{if(sessionStorage.getItem('sk_seen'))return;sessionStorage.setItem('sk_seen','1');
+var u='https://skalp-visits.meetmoves.workers.dev/hit?r='+encodeURIComponent(document.referrer||'')+'&p='+encodeURIComponent(location.pathname);
+if(navigator.sendBeacon){navigator.sendBeacon(u);}else{fetch(u,{mode:'no-cors',keepalive:true});}}catch(e){}})();
+</script>
 </head>
 <body>
 <div id="wrap"><canvas id="game"></canvas></div>
